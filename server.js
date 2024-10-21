@@ -23,11 +23,26 @@ app.use(cors());
 const secretKey = '64011212016';
 
 // การตั้งค่าการเชื่อมต่อฐานข้อมูล
+// const dbConfig = {
+//     user: 'APD66_64011212016',
+//     password: 'ZX0LE35U',
+//     server: '202.28.34.203\\SQLEXPRESS',
+//     database: 'APD66_64011212016',
+//     options: {
+//         encrypt: false,
+//         enableArithAbort: true,
+//         trustServerCertificate: true,
+//         connectTimeout: 60000,
+//         requestTimeout: 60000
+        
+//     }
+// };
+
 const dbConfig = {
     user: 'APD66_64011212016',
     password: 'ZX0LE35U',
-    server: '202.28.34.203\\SQLEXPRESS',
-    // server: 'mssql',
+    server: '202.28.34.203',  // ไม่ใส่ \SQLEXPRESS
+    port: 1433,  // ระบุพอร์ต SQL Server ให้แน่นอน
     database: 'APD66_64011212016',
     options: {
         encrypt: false,
@@ -35,7 +50,6 @@ const dbConfig = {
         trustServerCertificate: true,
         connectTimeout: 60000,
         requestTimeout: 60000
-        
     }
 };
 
