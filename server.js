@@ -2401,7 +2401,7 @@ app.get('/detailconcertsmt/:cid', (req, res) => {
         return res.status(400).send('CID must be a valid integer.');
     }
 
-    const query = `SELECT      Concerts.CID, Show_secheduld, Poster, Name, NameTC, NameTS, Ticket_zone, Price, Address, Detail, LineUP,Time,
+    const query = `SELECT      Concerts.CID, Show_secheduld, Poster, Name, NameTC ,NameT , NameTS, Ticket_zone, Price, Address, Detail, LineUP,Time,
                                 CASE 
                                     WHEN DATENAME(WEEKDAY, StartDate) = 'Monday'    THEN 'วันจันทร์'
                                     WHEN DATENAME(WEEKDAY, StartDate) = 'Tuesday'   THEN 'วันอังคาร'
@@ -2456,6 +2456,7 @@ app.get('/detailconcertsmt/:cid', (req, res) => {
                     JOIN        TicketInform    ON ShowTime.CID         = TicketInform.CID
                     JOIN        TypeConcert     ON Concerts.Con_type    = TypeConcert.ID_Type_con
                     JOIN        TypeShow        ON Concerts.Per_type    = TypeShow.ID_Type_Show
+                    JOIN        TypeTicket      ON TicketInform.Type    = TypeTicket.TID
                     WHERE       Concerts.CID    = @CID
                     ORDER BY    Concerts.CID    DESC`;
     const inputs = [
@@ -11337,8 +11338,29 @@ app.get('/packeage-and-search', async (req, res) => {
 
     try {
         let query = `
-            SELECT	Concerts.CID, Poster, Name, NameTC, LineUP, Address, NameT, PriceCD, Time, Ticket_zone,Number_of_ticket, NameTS,
-			        Hotels.ID_hotel ,NameH, AddressH, PriceH, NameTH, NameTR, NameTV, NameRS, Number_of_room, Total,
+            SELECT	Concerts.CID, MAX(CAST(Poster AS NVARCHAR(MAX))) AS Poster, 
+                    MAX(CAST(Name AS NVARCHAR(MAX))) AS Name,
+                    MAX(CAST(NameTC AS NVARCHAR(MAX))) AS NameTC,	
+                    MAX(CAST(LineUP AS NVARCHAR(MAX))) AS LineUP,
+                    MAX(CAST(Address AS NVARCHAR(MAX))) AS Address, 
+                    MAX(CAST(NameT AS NVARCHAR(MAX))) AS NameT,
+                    MAX(PriceCD) AS PriceCD, 
+                    MAX(Time) AS Time,
+                    MAX(Ticket_zone) AS Ticket_zone, 
+                    SUM(Number_of_ticket) AS Number_of_ticket, 
+                    MAX(CAST(NameTS AS NVARCHAR(MAX))) AS NameTS, 
+                    MAX(Hotels.ID_hotel) AS ID_hotel,
+                    MAX(CAST(NameH AS NVARCHAR(MAX))) AS NameH, 
+                    MAX(CAST(AddressH AS NVARCHAR(MAX))) AS AddressH,
+                    MAX(PriceH) AS PriceH, 
+                    MAX(CAST(NameTH AS NVARCHAR(MAX))) AS NameTH,
+                    MAX(CAST(NameTR AS NVARCHAR(MAX))) AS NameTR, 
+                    MAX(CAST(NameTV AS NVARCHAR(MAX))) AS NameTV,
+                    MAX(CAST(NameRS AS NVARCHAR(MAX))) AS NameRS, 
+                    SUM(Number_of_room) AS Number_of_room,
+                    SUM(Total) AS Total,
+                    MAX(CAST(StartDate AS NVARCHAR(MAX))) AS StartDate_Max,
+                    MAX(Concerts.EndDate) AS EndDate_Max,
                     CASE 
                         WHEN DATENAME(WEEKDAY, StartDate) = 'Monday' THEN 'วันจันทร์'
                         WHEN DATENAME(WEEKDAY, StartDate) = 'Tuesday' THEN 'วันอังคาร'
@@ -11388,46 +11410,47 @@ app.get('/packeage-and-search', async (req, res) => {
                         WHEN MONTH(EndDate) = 11 THEN 'พฤศจิกายน' 
                         WHEN MONTH(EndDate) = 12 THEN 'ธันวาคม' 
                     END + ' ' + CAST(YEAR(EndDate) + 543 AS NVARCHAR) AS EndDate_TH
-			FROM	Packeage
-			JOIN	Deals			ON Packeage.ID_deals     = Deals.ID_deals
-			JOIN	ConcertDeals	ON Deals.CDID            = ConcertDeals.CDID
-			JOIN	Concerts		ON ConcertDeals.CID      = Concerts.CID
-            JOIN    TypeConcert     ON Concerts.Con_type     = TypeConcert.ID_Type_Con
-			JOIN	ShowTime		ON Concerts.CID          = ShowTime.CID
-			JOIN	TicketInform	ON Concerts.CID          = TicketInform.CID
-			JOIN	TypeTicket		ON TicketInform.Type     = TypeTicket.TID
-            JOIN    TypeShow        ON Concerts.Per_type     = TypeShow.ID_Type_Show
+                    
+                FROM	Packeage
+                JOIN	Deals			ON Packeage.ID_deals     = Deals.ID_deals
+                JOIN	ConcertDeals	ON Deals.CDID            = ConcertDeals.CDID
+                JOIN	Concerts		ON ConcertDeals.CID      = Concerts.CID
+                JOIN    TypeConcert     ON Concerts.Con_type     = TypeConcert.ID_Type_Con
+                JOIN	ShowTime		ON Concerts.CID          = ShowTime.CID
+                JOIN	TicketInform	ON Concerts.CID          = TicketInform.CID
+                JOIN	TypeTicket		ON TicketInform.Type     = TypeTicket.TID
+                JOIN    TypeShow        ON Concerts.Per_type     = TypeShow.ID_Type_Show
 
-			JOIN	HotelDeals		ON Deals.HDID            = HotelDeals.HDID
-			JOIN	RoomHotel		ON HotelDeals.ID_room    = RoomHotel.ID_room
-			JOIN	Hotels			ON RoomHotel.ID_hotel    = Hotels.ID_hotel
-			JOIN	TypeHotel		ON Hotels.Type_hotel     = TypeHotel.ID_Type_Hotel
-			JOIN	TypeRoom		ON RoomHotel.Type_room   = TypeRoom.ID_Type_Room
-			JOIN	TypeView		ON RoomHotel.Type_view   = TypeView.ID_Type_Room
-			JOIN	RoomStatus		ON RoomHotel.Status_room = RoomStatus.ID_Room_Status
-        `;
+                JOIN	HotelDeals		ON Deals.HDID            = HotelDeals.HDID
+                JOIN	RoomHotel		ON HotelDeals.ID_room    = RoomHotel.ID_room
+                JOIN	Hotels			ON RoomHotel.ID_hotel    = Hotels.ID_hotel
+                JOIN	TypeHotel		ON Hotels.Type_hotel     = TypeHotel.ID_Type_Hotel
+                JOIN	TypeRoom		ON RoomHotel.Type_room   = TypeRoom.ID_Type_Room
+                JOIN	TypeView		ON RoomHotel.Type_view   = TypeView.ID_Type_Room
+                JOIN	RoomStatus		ON RoomHotel.Status_room = RoomStatus.ID_Room_Status`;
+
         if (search) {
             query += `
-                WHERE Name              LIKE '%${search}%'   OR
-                    NameTC              LIKE '%${search}%'   OR
-                    LineUP              LIKE '%${search}%'   OR
-                    Address             LIKE '%${search}%'   OR
-					NameT               LIKE '%${search}%'   OR
-                    PriceCD             LIKE '%${search}%'   OR
-                    Time                LIKE '%${search}%'   OR
-                    Ticket_zone         LIKE '%${search}%'   OR
-                    Number_of_ticket    LIKE '%${search}%'   OR
-                    NameTS              LIKE '%${search}%'   OR
+                WHERE Name              LIKE @search OR
+                    NameTC              LIKE @search OR
+                    LineUP              LIKE @search OR
+                    Address             LIKE @search OR
+					NameT               LIKE @search OR
+                    CAST(PriceCD AS NVARCHAR) LIKE @search OR
+                    Time                LIKE @search OR
+                    Ticket_zone         LIKE @search OR
+                    CAST(Number_of_ticket AS NVARCHAR) LIKE @search OR
+                    NameTS              LIKE @search OR
 					
-                    NameH               LIKE '%${search}%'   OR
-                    AddressH            LIKE '%${search}%'   OR
-                    PriceH              LIKE '%${search}%'   OR
-                    Total               LIKE '%${search}%'   OR
-                    NameTH              LIKE '%${search}%'   OR
-					NameTR              LIKE '%${search}%'   OR
-                    NameTV              LIKE '%${search}%'   OR
-                    NameRS              LIKE '%${search}%'   OR
-                    Number_of_room      LIKE '%${search}%'   OR
+                    NameH               LIKE @search OR
+                    AddressH            LIKE @search OR
+                    CAST(PriceH AS NVARCHAR) LIKE @search OR
+                    CAST(Total AS NVARCHAR) LIKE @search OR
+                    NameTH              LIKE @search OR
+					NameTR              LIKE @search OR
+                    NameTV              LIKE @search OR
+                    NameRS              LIKE @search OR
+                    CAST(Number_of_room AS NVARCHAR) LIKE @search OR
 
                     (
                     CASE 
@@ -11454,7 +11477,7 @@ app.get('/packeage-and-search', async (req, res) => {
                         WHEN MONTH(StartDate) = 11 THEN 'พฤศจิกายน' 
                         WHEN MONTH(StartDate) = 12 THEN 'ธันวาคม' 
                     END + ' ' + CAST(YEAR(StartDate) + 543 AS NVARCHAR)
-                ) LIKE '%${search}%'   OR
+                ) LIKE @search OR
                 (
                     CASE 
                         WHEN DATENAME(WEEKDAY, EndDate) = 'Monday' THEN 'วันจันทร์'
@@ -11480,17 +11503,25 @@ app.get('/packeage-and-search', async (req, res) => {
                         WHEN MONTH(EndDate) = 11 THEN 'พฤศจิกายน' 
                         WHEN MONTH(EndDate) = 12 THEN 'ธันวาคม' 
                     END + ' ' + CAST(YEAR(EndDate) + 543 AS NVARCHAR)
-                ) LIKE '%${search}%' 
-            `;
+                ) LIKE @search
+                `;
         }
 
-        const result = await sql.query(query);
+        query += ' GROUP BY Concerts.CID, Concerts.StartDate, Concerts.EndDate';
+
+        const pool = await sql.connect(dbConfig);
+        const result = await pool
+            .request()
+            .input('search', sql.NVarChar, search ? `%${search}%` : null)
+            .query(query);
+
         res.status(200).json(result.recordset);
     } catch (err) {
-        console.error('Error fetching hotel data:', err);
+        console.error('Error fetching data:', err);
         res.status(500).send('Internal server error');
     }
 });
+
 
 app.get('/check-user', async (req, res) => {
     const { Email } = req.query;
@@ -12357,6 +12388,113 @@ app.get('/roomdeals/:ID_room', async (req, res) => {
     res.status(500).send('Internal server error');
     }
 });
+
+
+app.get('/detail-con-in-hotel', async (req, res) => {
+    const { CID } = req.query;
+
+    if (!CID) {
+        return res.status(400).send('Please provide a CID');
+    }
+
+    try {
+        const result = await sql.query`
+            SELECT	Name, NameH, NameTR, NameTV, Deals.HDID, Hotels.ID_hotel
+            FROM	Concerts
+            JOIN	ConcertDeals	ON	Concerts.CID		=	ConcertDeals.CID
+            JOIN	Deals			ON	ConcertDeals.CDID	=	Deals.CDID
+            JOIN	HotelDeals		ON	Deals.HDID			=	HotelDeals.HDID
+            JOIN	RoomHotel		ON	HotelDeals.ID_room	=	RoomHotel.ID_room
+            JOIN	TypeRoom		ON	RoomHotel.Type_room	=	TypeRoom.ID_Type_room
+            JOIN	TypeView		ON	RoomHotel.Type_view	=	TypeView.ID_Type_room
+            JOIN	Hotels			ON	RoomHotel.ID_hotel	=	Hotels.ID_hotel
+            JOIN	Packeage		ON	Deals.ID_deals		=	Packeage.ID_deals
+            WHERE	Concerts.CID	=  ${CID}
+        `;
+        res.status(200).json(result.recordset);
+    } catch (err) {
+        console.error('Error fetching type concert data:', err);
+        res.status(500).send('Internal server error');
+    }
+});
+
+app.get('/detail-hotel-in-con', async (req, res) => {
+    const { ID_hotel } = req.query;
+
+    if (!ID_hotel) {
+        return res.status(400).send('Please provide a CID');
+    }
+
+    try {
+        const result = await sql.query`
+            SELECT	NameH, Name, Concerts.CID, ConcertDeals.CDID
+            FROM	Concerts
+            JOIN	ConcertDeals	ON	Concerts.CID		=	ConcertDeals.CID
+            JOIN	Deals			ON	ConcertDeals.CDID	=	Deals.CDID
+            JOIN	HotelDeals		ON	Deals.HDID			=	HotelDeals.HDID
+            JOIN	RoomHotel		ON	HotelDeals.ID_room	=	RoomHotel.ID_room
+            JOIN	TypeRoom		ON	RoomHotel.Type_room	=	TypeRoom.ID_Type_room
+            JOIN	TypeView		ON	RoomHotel.Type_view	=	TypeView.ID_Type_room
+            JOIN	Hotels			ON	RoomHotel.ID_hotel	=	Hotels.ID_hotel
+            JOIN	Packeage		ON	Deals.ID_deals		=	Packeage.ID_deals
+            WHERE	Hotels.ID_hotel	=  ${ID_hotel}
+        `;
+        res.status(200).json(result.recordset);
+    } catch (err) {
+        console.error('Error fetching type concert data:', err);
+        res.status(500).send('Internal server error');
+    }
+});
+
+app.post('/register-admin', async (req, res) => {
+    const { Email, Password, ConfirmPassword } = req.body;
+
+    // Check if passwords match
+    if (Password !== ConfirmPassword) {
+        return res.status(400).send('Passwords do not match');
+    }
+
+    try {
+        // Check if the user already exists in Users table
+        const checkUser = await sql.query`
+            SELECT * FROM Users WHERE Email = ${Email}
+        `;
+
+        if (checkUser.recordset.length === 0) {
+            return res.status(400).send('Invalid Email');
+        }
+
+        // Fetch the ID_user from Users table
+        const { ID_user } = checkUser.recordset[0];
+
+        // Check if the user is already registered as Admin
+        const checkAdmin = await sql.query`
+            SELECT * FROM Admin WHERE ID_user = ${ID_user}
+        `;
+
+        if (checkAdmin.recordset.length > 0) {
+            return res.status(400).send('This email is already registered as an admin');
+        }
+
+        // Validate the password against the stored hash
+        const validPassword = await bcrypt.compare(Password, checkUser.recordset[0].Password);
+        if (!validPassword) {
+            return res.status(400).send('Invalid Password');
+        }
+
+        // Insert ID_user into the Admin table
+        await sql.query`
+            INSERT INTO Admin (ID_user)
+            VALUES (${ID_user})
+        `;
+
+        res.send('Registration successful');
+    } catch (err) {
+        console.error('Error inserting into the database:', err);
+        res.status(500).send('Internal server error');
+    }
+});
+
 
 // เริ่มต้นเซิร์ฟเวอร์
 const PORT = process.env.PORT || 5000;
